@@ -1,0 +1,12 @@
+Objective: Install necessary packages for app functionalities.
+
+Image Capture:
+expo-camera: For camera integration.
+expo-image-picker: For handling gallery uploads.
+AI Integration:
+axios: For API requests to the external ML model.
+react-native-vision-camera: Advanced camera library (optional).
+UI/UX:
+react-navigation: For navigation.
+react-native-paper or styled-components: For UI components and styling.
+

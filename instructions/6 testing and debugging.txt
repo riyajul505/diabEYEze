@@ -1,0 +1,3 @@
+Objective: Ensure code quality and functionality.
+Use Expo Go for real-device testing.
+Add unit tests for critical components using Jest or React Native Testing Library.

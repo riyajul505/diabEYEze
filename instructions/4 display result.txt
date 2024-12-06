@@ -1,0 +1,3 @@
+Objective: Show glucose levels and recommendations.
+Create a ResultsScreen.js to display data from the AI model.
+Use charts or visuals (e.g., react-native-svg for graphs).

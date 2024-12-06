@@ -1,0 +1,11 @@
+Exercise Plan Recommendation
+Objective: Suggest personalized exercise plans.
+
+Create a JSON file with predefined exercise plans based on glucose ranges.
+Load and display suggestions dynamically based on API results.
+Example structure in utils/exercisePlans.js:
+export const exercisePlans = {
+    low: 'Light cardio for 20 minutes daily.',
+    medium: 'Moderate intensity workout for 30 minutes.',
+    high: 'Consult a physician for high-intensity plans.',
+};

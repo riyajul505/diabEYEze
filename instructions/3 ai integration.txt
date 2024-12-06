@@ -1,0 +1,18 @@
+Objective: Connect to the external ML model API.
+
+Create a service in the services folder, e.g., GlucoseAPI.js:
+
+
+import axios from 'axios';
+
+const BASE_URL = 'https://your-ai-model-api-url.com';
+
+export const analyzeGlucose = async (imageData) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/analyze`, { image: imageData });
+        return response.data;
+    } catch (error) {
+        console.error('Error analyzing glucose:', error);
+        throw error;
+    }
+};

@@ -1,0 +1,10 @@
+{
+  "appId": "com.iubat.glucosemonitor",
+  "appName": "Glucose Monitor",
+  "webDir": "dist",
+  "plugins": {
+    "Camera": {
+      "saveToGallery": true
+    }
+  }
+}

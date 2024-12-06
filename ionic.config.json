@@ -1,0 +1,7 @@
+{
+  "name": "iubat-hackacthon-practise",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
