@@ -8,54 +8,91 @@ import {
   IonButton, 
   IonImg,
   IonLoading,
-  IonAlert 
+  IonAlert,
+  IonIcon,
+  IonText,
 } from '@ionic/react';
+import { camera, analytics } from 'ionicons/icons';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Capacitor } from '@capacitor/core';
+import './CameraScreen.css';
 
 const CameraScreen: React.FC = () => {
   const [photo, setPhoto] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const checkPermissions = async () => {
-      if (Capacitor.getPlatform() !== 'web') {
-        const { camera } = await Camera.checkPermissions();
-        if (camera !== 'granted') {
-          const { camera: requestedPermission } = await Camera.requestPermissions();
-          if (requestedPermission !== 'granted') {
-            setError('Camera permissions are required to use this feature');
-          }
+    initializeCamera();
+  }, []);
+
+  const initializeCamera = async () => {
+    try {
+      const permission = await Camera.checkPermissions();
+      if (permission.camera !== 'granted') {
+        const request = await Camera.requestPermissions();
+        if (request.camera !== 'granted') {
+          setError('Camera permission is required to take photos.');
         }
       }
-    };
-    checkPermissions();
-  }, []);
+    } catch (err) {
+      console.error('Permission check failed:', err);
+      setError('Failed to initialize camera. Please check permissions.');
+    }
+  };
 
   const takePicture = async () => {
     try {
       setLoading(true);
+      setError(undefined);
+
       const image = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera
+        source: CameraSource.Camera,
+        width: 1024,
+        presentationStyle: 'popover',
+        promptLabelHeader: 'Take Eye Photo',
+        promptLabelPhoto: 'Take Photo',
+        promptLabelPicture: 'Use Camera'
       });
 
-      setPhoto(image.dataUrl);
-      setError(null);
-    } catch (error) {
-      console.error('Error taking picture', error);
-      setError('Failed to capture image. Please try again.');
+      if (image?.dataUrl) {
+        setPhoto(image.dataUrl);
+      }
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      // Don't show error for user cancellation
+      if (!err.message?.includes('cancelled') && !err.message?.includes('canceled')) {
+        setError(err.message || 'Failed to take photo. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const analyzeImage = () => {
-    // Placeholder for future AI analysis
-    console.log('Analyzing image...');
+  const analyzeImage = async () => {
+    if (!photo) return;
+
+    try {
+      setLoading(true);
+      // Simulate analysis delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock result
+      const mockResult = {
+        glucoseLevel: Math.floor(Math.random() * (180 - 70) + 70),
+        confidence: Math.floor(Math.random() * (100 - 80) + 80)
+      };
+      
+      setError(undefined);
+      alert(`Glucose Level: ${mockResult.glucoseLevel} mg/dL\nConfidence: ${mockResult.confidence}%`);
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      setError('Failed to analyze image. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,36 +102,57 @@ const CameraScreen: React.FC = () => {
           <IonTitle>Eye Glucose Scan</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <IonLoading 
-          isOpen={loading}
-          message={'Capturing image...'}
-        />
-
-        {error && (
-          <IonAlert
-            isOpen={!!error}
-            onDidDismiss={() => setError(null)}
-            header={'Error'}
-            message={error}
-            buttons={['OK']}
-          />
-        )}
-
-        <div style={{ textAlign: 'center' }}>
-          <IonButton onClick={takePicture}>
-            Capture Eye Image
-          </IonButton>
-
-          {photo && (
-            <div>
-              <IonImg src={photo} style={{ maxHeight: '300px', margin: '20px auto' }} />
-              <IonButton color="secondary" onClick={analyzeImage}>
-                Analyze Image
-              </IonButton>
+      <IonContent className="camera-content ion-padding">
+        <div className="camera-container">
+          {!photo ? (
+            <div className="camera-placeholder">
+              <IonIcon icon={camera} className="camera-icon" />
+              <IonText color="medium">
+                <p>Take a clear photo of your eye</p>
+              </IonText>
+            </div>
+          ) : (
+            <div className="photo-preview">
+              <IonImg src={photo} alt="Eye scan" />
             </div>
           )}
+
+          <div className="button-container">
+            <IonButton 
+              expand="block"
+              onClick={takePicture}
+              className="capture-button"
+            >
+              <IonIcon slot="start" icon={camera} />
+              {photo ? 'Retake Photo' : 'Take Photo'}
+            </IonButton>
+
+            {photo && (
+              <IonButton 
+                expand="block"
+                color="secondary"
+                onClick={analyzeImage}
+                className="analyze-button"
+              >
+                <IonIcon slot="start" icon={analytics} />
+                Analyze Image
+              </IonButton>
+            )}
+          </div>
         </div>
+
+        <IonLoading 
+          isOpen={loading}
+          message={photo ? 'Analyzing image...' : 'Opening camera...'}
+        />
+
+        <IonAlert
+          isOpen={!!error}
+          onDidDismiss={() => setError(undefined)}
+          header={'Error'}
+          message={error}
+          buttons={['OK']}
+        />
       </IonContent>
     </IonPage>
   );

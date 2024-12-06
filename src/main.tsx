@@ -1,23 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { Redirect, Route } from 'react-router-dom';
-import { defineCustomElements } from '@ionic/pwa-elements/loader';
-import {
-  IonApp,
-  IonIcon,
-  IonLabel,
-  IonRouterOutlet,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
-  setupIonicReact
-} from '@ionic/react';
+import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { 
-  eyeOutline, 
-  statsChartOutline, 
-  heartOutline 
-} from 'ionicons/icons';
+import { Route, Redirect } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -37,50 +23,64 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import './theme/custom.css';
 
+/* Pages */
+import LoginScreen from './pages/LoginScreen';
+import SignUpScreen from './pages/SignUpScreen';
 import CameraScreen from './pages/CameraScreen';
-import HealthInsightsScreen from './pages/HealthInsightsScreen';
-import ExercisePlanScreen from './pages/ExercisePlanScreen';
 
 setupIonicReact();
-defineCustomElements(window);
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route exact path="/camera">
-            <CameraScreen />
-          </Route>
-          <Route exact path="/insights">
-            <HealthInsightsScreen />
-          </Route>
-          <Route exact path="/exercise">
-            <ExercisePlanScreen />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/camera" />
-          </Route>
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="camera" href="/camera">
-            <IonIcon icon={eyeOutline} />
-            <IonLabel>Capture</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="insights" href="/insights">
-            <IonIcon icon={statsChartOutline} />
-            <IonLabel>Insights</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="exercise" href="/exercise">
-            <IonIcon icon={heartOutline} />
-            <IonLabel>Exercise</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
-    </IonReactRouter>
-  </IonApp>
-);
+interface PrivateRouteProps {
+  component: React.ComponentType<any>;
+  path: string;
+  exact?: boolean;
+}
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({
+  component: Component,
+  ...rest
+}) => {
+  const { currentUser } = useAuth();
+
+  return (
+    <Route
+      {...rest}
+      render={props => {
+        return currentUser ? (
+          <Component {...props} />
+        ) : (
+          <Redirect to="/login" />
+        );
+      }}
+    />
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <AuthProvider>
+        <IonReactRouter>
+          <IonRouterOutlet>
+            <Route exact path="/login" component={LoginScreen} />
+            <Route exact path="/signup" component={SignUpScreen} />
+            <PrivateRoute path="/camera" component={CameraScreen} />
+            <Route exact path="/">
+              <Redirect to="/login" />
+            </Route>
+          </IonRouterOutlet>
+        </IonReactRouter>
+      </AuthProvider>
+    </IonApp>
+  );
+};
+
+import { defineCustomElements } from '@ionic/pwa-elements/loader';
+
+// Call the element loader after the platform has been bootstrapped
+defineCustomElements(window);
 
 const container = document.getElementById('root');
 const root = createRoot(container!);
