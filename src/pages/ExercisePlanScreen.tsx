@@ -1,120 +1,94 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  IonContent, 
-  IonHeader, 
-  IonPage, 
-  IonTitle, 
+import {
+  IonPage,
+  IonHeader,
   IonToolbar,
+  IonTitle,
+  IonContent,
   IonList,
   IonItem,
   IonLabel,
-  IonNote,
+  IonSelect,
+  IonSelectOption,
   IonButton,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonLoading,
   IonAlert,
-  IonModal,
-  IonHeader as ModalHeader,
-  IonToolbar as ModalToolbar,
-  IonButtons,
-  IonContent as ModalContent
+  IonInput,
+  IonGrid,
+  IonRow,
+  IonCol
 } from '@ionic/react';
+import axios from 'axios';
+import { getUserProfile } from '../utils/profileUtils';
 
-interface Exercise {
+// Interfaces for exercise suggestions
+interface ExerciseSuggestion {
   name: string;
-  duration: string;
-  intensity: 'Low' | 'Moderate' | 'High';
-  description: string;
+  caloriesBurned: number;
+  duration: number;
+}
+
+interface ExerciseSuggestionsResponse {
+  suggestedExercises: ExerciseSuggestion[];
 }
 
 const ExercisePlanScreen: React.FC = () => {
-  const [exercisePlan, setExercisePlan] = useState<Exercise[]>([]);
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  // State management
+  const [exerciseType, setExerciseType] = useState<string>('');
+  const [sessionDuration, setSessionDuration] = useState<string>('');
+  const [suggestedExercises, setSuggestedExercises] = useState<ExerciseSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateExercisePlan = (glucoseLevel: number = 120) => {
-    let plan: Exercise[] = [];
+  // Exercise type options
+  const exerciseTypes = [
+    'cardio', 
+    'strength', 
+    'flexibility', 
+    'balance', 
+    'high-intensity'
+  ];
 
-    if (glucoseLevel < 100) {
-      // Low glucose level: Focus on energy-boosting, low-intensity exercises
-      plan = [
-        { 
-          name: 'Walking', 
-          duration: '30 mins', 
-          intensity: 'Low',
-          description: 'Gentle walking to improve circulation and maintain stable glucose levels.'
-        },
-        { 
-          name: 'Light Yoga', 
-          duration: '20 mins', 
-          intensity: 'Low',
-          description: 'Gentle stretching and breathing exercises to reduce stress and improve insulin sensitivity.'
-        }
-      ];
-    } else if (glucoseLevel < 125) {
-      // Prediabetes: Moderate intensity exercises
-      plan = [
-        { 
-          name: 'Brisk Walking', 
-          duration: '45 mins', 
-          intensity: 'Moderate',
-          description: 'Faster-paced walking to improve cardiovascular health and glucose metabolism.'
-        },
-        { 
-          name: 'Cycling', 
-          duration: '30 mins', 
-          intensity: 'Moderate',
-          description: 'Low-impact cardio to help manage blood sugar levels.'
-        },
-        { 
-          name: 'Resistance Training', 
-          duration: '20 mins', 
-          intensity: 'Moderate',
-          description: 'Light weight training to build muscle and improve insulin sensitivity.'
-        }
-      ];
-    } else {
-      // High glucose level: Focus on high-intensity, fat-burning exercises
-      plan = [
-        { 
-          name: 'High-Intensity Interval Training (HIIT)', 
-          duration: '25 mins', 
-          intensity: 'High',
-          description: 'Short bursts of intense exercise to rapidly improve glucose metabolism.'
-        },
-        { 
-          name: 'Swimming', 
-          duration: '40 mins', 
-          intensity: 'High',
-          description: 'Full-body workout that helps lower blood sugar and improve cardiovascular health.'
-        },
-        { 
-          name: 'Circuit Training', 
-          duration: '30 mins', 
-          intensity: 'High',
-          description: 'Combination of cardio and strength training to boost metabolism and glucose control.'
-        }
-      ];
+  // Fetch exercise suggestions
+  const fetchExerciseSuggestions = async () => {
+    // Validate inputs
+    if (!exerciseType || !sessionDuration) {
+      setError('Please select exercise type and session duration');
+      return;
     }
 
-    setExercisePlan(plan);
-  };
-
-  useEffect(() => {
     try {
-      // In a real app, this would be based on the latest glucose reading
-      generateExercisePlan();
-    } catch (err) {
-      setError('Failed to generate exercise plan. Please try again.');
-    }
-  }, []);
+      setLoading(true);
 
-  const regeneratePlan = () => {
-    try {
-      // Simulate regenerating plan with a random glucose level
-      const randomGlucoseLevel = Math.random() * 200;
-      generateExercisePlan(randomGlucoseLevel);
-      setError(null);
+      // Get user profile from local storage
+      const userProfile = getUserProfile();
+
+      // Prepare request payload
+      const requestPayload = {
+        Name: userProfile?.name || 'User',
+        Age: userProfile?.age || 30,
+        weight: userProfile?.weight || 70,
+        exercisesType: exerciseType,
+        sessionDuration: sessionDuration
+      };
+
+      // Send request to API
+      const response = await axios.post<ExerciseSuggestionsResponse>(
+        'https://diabeyes-server.vercel.app/api/exercise-suggestions',
+        requestPayload
+      );
+
+      // Update suggested exercises
+      setSuggestedExercises(response.data.suggestedExercises);
     } catch (err) {
-      setError('Failed to regenerate exercise plan. Please try again.');
+      console.error('Error fetching exercise suggestions:', err);
+      setError('Failed to fetch exercise suggestions. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,66 +96,93 @@ const ExercisePlanScreen: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Personalized Exercise Plan</IonTitle>
+          <IonTitle>Exercise Planner</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        {error && (
-          <IonAlert
-            isOpen={!!error}
-            onDidDismiss={() => setError(null)}
-            header={'Error'}
-            message={error}
-            buttons={['OK']}
-          />
-        )}
+      
+      <IonContent>
+        <IonGrid>
+          <IonRow>
+            <IonCol>
+              <IonItem>
+                <IonLabel position="stacked">Exercise Type</IonLabel>
+                <IonSelect 
+                  value={exerciseType}
+                  placeholder="Select Exercise Type"
+                  onIonChange={e => setExerciseType(e.detail.value)}
+                >
+                  {exerciseTypes.map(type => (
+                    <IonSelectOption key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            </IonCol>
+          </IonRow>
 
-        <IonButton onClick={regeneratePlan} expand="block">
-          Regenerate Plan
-        </IonButton>
+          <IonRow>
+            <IonCol>
+              <IonItem>
+                <IonLabel position="stacked">Session Duration (minutes)</IonLabel>
+                <IonInput
+                  type="number"
+                  value={sessionDuration}
+                  placeholder="Enter duration"
+                  onIonChange={e => setSessionDuration(e.detail.value!)}
+                />
+              </IonItem>
+            </IonCol>
+          </IonRow>
 
-        <IonList>
-          {exercisePlan.map((exercise, index) => (
-            <IonItem 
-              key={index} 
-              button 
-              onClick={() => setSelectedExercise(exercise)}
-            >
-              <IonLabel>
-                <h2>{exercise.name}</h2>
-                <p>Duration: {exercise.duration}</p>
-              </IonLabel>
-              <IonNote slot="end" color="primary">
-                {exercise.intensity}
-              </IonNote>
-            </IonItem>
-          ))}
-        </IonList>
+          <IonRow>
+            <IonCol>
+              <IonButton 
+                expand="block" 
+                onClick={fetchExerciseSuggestions}
+                disabled={!exerciseType || !sessionDuration}
+              >
+                Get Exercise Suggestions
+              </IonButton>
+            </IonCol>
+          </IonRow>
 
-        <IonModal 
-          isOpen={!!selectedExercise} 
-          onDidDismiss={() => setSelectedExercise(null)}
-        >
-          {selectedExercise && (
-            <>
-              <ModalHeader>
-                <ModalToolbar>
-                  <IonTitle>{selectedExercise.name}</IonTitle>
-                  <IonButtons slot="end">
-                    <IonButton onClick={() => setSelectedExercise(null)}>Close</IonButton>
-                  </IonButtons>
-                </ModalToolbar>
-              </ModalHeader>
-              <ModalContent>
-                <div className="ion-padding">
-                  <p><strong>Duration:</strong> {selectedExercise.duration}</p>
-                  <p><strong>Intensity:</strong> {selectedExercise.intensity}</p>
-                  <p>{selectedExercise.description}</p>
-                </div>
-              </ModalContent>
-            </>
+          {/* Suggested Exercises */}
+          {suggestedExercises.length > 0 && (
+            <IonRow>
+              <IonCol>
+                <h2>Suggested Exercises</h2>
+                {suggestedExercises.map((exercise, index) => (
+                  <IonCard key={index}>
+                    <IonCardHeader>
+                      <IonCardTitle>{exercise.name}</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      <p>Duration: {exercise.duration} minutes</p>
+                      <p>Calories Burned: {exercise.caloriesBurned} cal</p>
+                    </IonCardContent>
+                  </IonCard>
+                ))}
+              </IonCol>
+            </IonRow>
           )}
-        </IonModal>
+        </IonGrid>
+
+        {/* Loading Indicator */}
+        <IonLoading
+          isOpen={loading}
+          onDidDismiss={() => setLoading(false)}
+          message={'Fetching exercise suggestions...'}
+        />
+
+        {/* Error Alert */}
+        <IonAlert
+          isOpen={!!error}
+          onDidDismiss={() => setError(null)}
+          header={'Error'}
+          message={error}
+          buttons={['OK']}
+        />
       </IonContent>
     </IonPage>
   );

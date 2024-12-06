@@ -1,3 +1,4 @@
+import React from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import {
   IonApp,
@@ -10,10 +11,22 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
+import { 
+  chatbubbleOutline, 
+  nutritionOutline, 
+  cameraOutline,
+  personOutline,
+  statsChartOutline,
+  heartOutline
+} from 'ionicons/icons';
+
+// Import Pages
+import ChatScreen from './pages/ChatScreen';
+import CameraScreen from './pages/CameraScreen';
+import DietScreen from './pages/DietScreen';
+import ProfileScreen from './pages/ProfileScreen';
+import HealthInsightsScreen from './pages/HealthInsightsScreen';
+import ExercisePlanScreen from './pages/ExercisePlanScreen';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -31,17 +44,6 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
-import '@ionic/react/css/palettes/dark.system.css';
-
 /* Theme variables */
 import './theme/variables.css';
 
@@ -52,31 +54,53 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
-          <Route exact path="/tab1">
-            <Tab1 />
+          <Route exact path="/camera">
+            <CameraScreen />
           </Route>
-          <Route exact path="/tab2">
-            <Tab2 />
+          <Route exact path="/insights">
+            <HealthInsightsScreen />
           </Route>
-          <Route path="/tab3">
-            <Tab3 />
+          <Route exact path="/exercise">
+            <ExercisePlanScreen />
+          </Route>
+          <Route exact path="/chat">
+            <ChatScreen />
+          </Route>
+          <Route exact path="/diet">
+            <DietScreen />
+          </Route>
+          <Route exact path="/profile">
+            <ProfileScreen />
           </Route>
           <Route exact path="/">
-            <Redirect to="/tab1" />
+            <Redirect to="/camera" />
           </Route>
         </IonRouterOutlet>
+        
         <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
+          <IonTabButton tab="camera" href="/camera">
+            <IonIcon icon={cameraOutline} />
+            <IonLabel>Scan</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Tab 2</IonLabel>
+          <IonTabButton tab="insights" href="/insights">
+            <IonIcon icon={statsChartOutline} />
+            <IonLabel>Insights</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
+          <IonTabButton tab="exercise" href="/exercise">
+            <IonIcon icon={heartOutline} />
+            <IonLabel>Exercise</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="chat" href="/chat">
+            <IonIcon icon={chatbubbleOutline} />
+            <IonLabel>Chat</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="diet" href="/diet">
+            <IonIcon icon={nutritionOutline} />
+            <IonLabel>Diet</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="profile" href="/profile">
+            <IonIcon icon={personOutline} />
+            <IonLabel>Profile</IonLabel>
           </IonTabButton>
         </IonTabBar>
       </IonTabs>
