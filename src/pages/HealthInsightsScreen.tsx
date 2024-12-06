@@ -1,127 +1,246 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  IonContent, 
-  IonHeader, 
-  IonPage, 
-  IonTitle, 
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
   IonToolbar,
   IonCard,
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
+  IonGrid,
+  IonRow,
+  IonCol,
   IonButton,
-  IonAlert
+  IonIcon,
+  IonBadge,
+  IonText,
+  IonRefresher,
+  IonRefresherContent,
+  RefresherEventDetail
 } from '@ionic/react';
+import { 
+  refreshOutline, 
+  medkitOutline, 
+  heartOutline, 
+  eyeOutline, 
+  alertCircleOutline 
+} from 'ionicons/icons';
 
-interface HealthInsight {
-  glucoseLevel: number | null;
-  status: 'Normal' | 'Prediabetes' | 'High Risk';
-  recommendation: string;
-}
+// Utility function to generate random numbers
+const getRandomNumber = (min: number, max: number, decimalPlaces: number = 0): number => {
+  const randomNum = Math.random() * (max - min) + min;
+  return Number(randomNum.toFixed(decimalPlaces));
+};
+
+// Health metrics generation function
+const generateHealthMetrics = () => {
+  return {
+    glucoseLevel: getRandomNumber(70, 400, 1), // mg/dL
+    diabeticNephropathy: "No",
+    intraocularPressure: getRandomNumber(10, 30, 1) // mmHg
+  };
+};
+
+// Function to categorize glucose levels
+const getGlucoseLevelCategory = (level: number) => {
+  if (level < 70) return { status: 'Low', color: 'danger' };
+  if (level < 100) return { status: 'Normal', color: 'success' };
+  if (level < 126) return { status: 'Prediabetes', color: 'warning' };
+  if (level < 200) return { status: 'High', color: 'danger' };
+  return { status: 'Very High', color: 'danger' };
+};
+
+// Function to get recommendations based on glucose level
+const getGlucoseRecommendations = (level: number): string[] => {
+  const { status } = getGlucoseLevelCategory(level);
+  
+  switch (status) {
+    case 'Low':
+      return [
+        'Consume fast-acting carbohydrates',
+        'Monitor blood sugar frequently',
+        'Have a balanced meal soon',
+        'Consult healthcare provider if symptoms persist'
+      ];
+    case 'Prediabetes':
+      return [
+        'Consult with a healthcare professional',
+        'Improve diet and exercise habits',
+        'Regular blood sugar monitoring',
+        'Consider lifestyle modifications'
+      ];
+    case 'High':
+      return [
+        'Consult your doctor immediately',
+        'Follow prescribed medication',
+        'Maintain a strict diet',
+        'Increase physical activity',
+        'Monitor blood sugar levels closely'
+      ];
+    case 'Very High':
+      return [
+        'Seek immediate medical attention',
+        'Follow emergency diabetes management plan',
+        'Strict blood sugar control',
+        'Avoid strenuous activities',
+        'Hydrate and monitor for ketones'
+      ];
+    default:
+      return [
+        'Maintain current healthy lifestyle',
+        'Regular exercise',
+        'Balanced diet',
+        'Routine health check-ups'
+      ];
+  }
+};
 
 const HealthInsightsScreen: React.FC = () => {
-  const [healthInsight, setHealthInsight] = useState<HealthInsight>({
-    glucoseLevel: null,
-    status: 'Normal',
-    recommendation: ''
-  });
-  const [error, setError] = useState<string | null>(null);
+  const [healthMetrics, setHealthMetrics] = useState(generateHealthMetrics());
+  const [loading, setLoading] = useState(false);
+
+  const refreshHealthMetrics = (event?: CustomEvent<RefresherEventDetail>) => {
+    setLoading(true);
+    
+    // Simulate async operation
+    setTimeout(() => {
+      const newMetrics = generateHealthMetrics();
+      setHealthMetrics(newMetrics);
+      setLoading(false);
+      
+      // Complete the refresher if it was triggered by pull-to-refresh
+      if (event) {
+        event.detail.complete();
+      }
+    }, 1000);
+  };
 
   useEffect(() => {
-    // Simulate fetching health data
-    const fetchHealthData = () => {
-      // In a real app, this would come from an AI analysis of the eye image
-      const mockGlucoseLevel = Math.random() * 200;
-      let status: HealthInsight['status'] = 'Normal';
-      let recommendation = '';
-
-      if (mockGlucoseLevel < 100) {
-        status = 'Normal';
-        recommendation = 'Your glucose levels are within the healthy range. Continue maintaining a balanced diet and regular exercise.';
-      } else if (mockGlucoseLevel < 125) {
-        status = 'Prediabetes';
-        recommendation = 'Your glucose levels indicate prediabetes. Consider consulting a healthcare professional and making lifestyle changes.';
-      } else {
-        status = 'High Risk';
-        recommendation = 'Your glucose levels are high. Immediate medical consultation is recommended.';
-      }
-
-      setHealthInsight({
-        glucoseLevel: Number(mockGlucoseLevel.toFixed(2)),
-        status,
-        recommendation
-      });
-    };
-
-    fetchHealthData();
+    // Initial load from localStorage or generate new metrics
+    const storedMetrics = localStorage.getItem('healthMetrics');
+    if (storedMetrics) {
+      setHealthMetrics(JSON.parse(storedMetrics));
+    }
   }, []);
 
-  const regenerateInsight = () => {
-    try {
-      // Simulate re-analyzing or fetching new data
-      const mockGlucoseLevel = Math.random() * 200;
-      let status: HealthInsight['status'] = 'Normal';
-      let recommendation = '';
+  useEffect(() => {
+    // Save metrics to localStorage whenever they change
+    localStorage.setItem('healthMetrics', JSON.stringify(healthMetrics));
+  }, [healthMetrics]);
 
-      if (mockGlucoseLevel < 100) {
-        status = 'Normal';
-        recommendation = 'Your glucose levels are within the healthy range. Continue maintaining a balanced diet and regular exercise.';
-      } else if (mockGlucoseLevel < 125) {
-        status = 'Prediabetes';
-        recommendation = 'Your glucose levels indicate prediabetes. Consider consulting a healthcare professional and making lifestyle changes.';
-      } else {
-        status = 'High Risk';
-        recommendation = 'Your glucose levels are high. Immediate medical consultation is recommended.';
-      }
-
-      setHealthInsight({
-        glucoseLevel: Number(mockGlucoseLevel.toFixed(2)),
-        status,
-        recommendation
-      });
-      setError(null);
-    } catch (err) {
-      setError('Failed to regenerate health insights. Please try again.');
-    }
-  };
+  const { status, color } = getGlucoseLevelCategory(healthMetrics.glucoseLevel);
+  const recommendations = getGlucoseRecommendations(healthMetrics.glucoseLevel);
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Health Insights</IonTitle>
+          <IonButton 
+            slot="end" 
+            fill="clear" 
+            onClick={() => refreshHealthMetrics()}
+            disabled={loading}
+          >
+            <IonIcon icon={refreshOutline} />
+          </IonButton>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        {error && (
-          <IonAlert
-            isOpen={!!error}
-            onDidDismiss={() => setError(null)}
-            header={'Error'}
-            message={error}
-            buttons={['OK']}
-          />
-        )}
+      
+      <IonContent>
+        <IonRefresher slot="fixed" onIonRefresh={refreshHealthMetrics}>
+          <IonRefresherContent />
+        </IonRefresher>
 
-        {healthInsight.glucoseLevel !== null ? (
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle>Glucose Analysis</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <p>Estimated Glucose Level: {healthInsight.glucoseLevel} mg/dL</p>
-              <p>Status: {healthInsight.status}</p>
-              <p>{healthInsight.recommendation}</p>
-            </IonCardContent>
-            <div className="ion-padding">
-              <IonButton onClick={regenerateInsight}>
-                Regenerate Insights
-              </IonButton>
-            </div>
-          </IonCard>
-        ) : (
-          <p>Analyzing health data...</p>
-        )}
+        <IonGrid>
+          <IonRow>
+            <IonCol>
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle>
+                    <IonIcon icon={heartOutline} /> Glucose Level
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <div className="ion-text-center">
+                    <h2>
+                      <IonText color={color}>
+                        {healthMetrics.glucoseLevel} mg/dL
+                      </IonText>
+                    </h2>
+                    <IonBadge color={color}>{status}</IonBadge>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+
+          <IonRow>
+            <IonCol>
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle>
+                    <IonIcon icon={eyeOutline} /> Intraocular Pressure
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <div className="ion-text-center">
+                    <h2>{healthMetrics.intraocularPressure} mmHg</h2>
+                    <IonBadge color={
+                      healthMetrics.intraocularPressure < 12 ? 'success' :
+                      healthMetrics.intraocularPressure > 22 ? 'danger' : 'warning'
+                    }>
+                      {healthMetrics.intraocularPressure < 12 ? 'Low' :
+                       healthMetrics.intraocularPressure > 22 ? 'High' : 'Normal'}
+                    </IonBadge>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+
+          <IonRow>
+            <IonCol>
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle>
+                    <IonIcon icon={medkitOutline} /> Diabetic Nephropathy
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <div className="ion-text-center">
+                    <h2>
+                      <IonText color={healthMetrics.diabeticNephropathy === 'No' ? 'success' : 'danger'}>
+                        {healthMetrics.diabeticNephropathy}
+                      </IonText>
+                    </h2>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+
+          <IonRow>
+            <IonCol>
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle>
+                    <IonIcon icon={alertCircleOutline} /> Recommendations
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <ul>
+                    {recommendations.map((rec, index) => (
+                      <li key={index}>{rec}</li>
+                    ))}
+                  </ul>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
       </IonContent>
     </IonPage>
   );

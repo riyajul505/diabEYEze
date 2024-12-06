@@ -19,14 +19,35 @@ import {
   IonItem,
   IonLabel,
   RefresherEventDetail,
-  IonSkeletonText
+  IonSkeletonText,
+  IonAlert,
+  IonLoading,
+  IonModal,
+  IonText,
+  IonChip,
+  IonGrid,
+  IonRow,
+  IonCol
 } from '@ionic/react';
 import { 
   restaurantOutline, 
   timeOutline, 
   warningOutline,
-  refreshOutline 
+  refreshOutline,
+  cameraOutline,
+  closeCircleOutline,
+  addCircleOutline,
+  removeCircleOutline
 } from 'ionicons/icons';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import axios from 'axios';
+
+// Ensure you have a secure way to store and access the API key
+const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY || '';
+
+// Spoonacular API configuration
+const SPOONACULAR_API_KEY = '0d24995570b849b3821c28b7f6f608ba'; // Replace with actual key
+const SPOONACULAR_BASE_URL = 'https://api.spoonacular.com/recipes';
 
 interface MealPlan {
   mealType: string;
@@ -46,10 +67,39 @@ interface DietPlan {
   lastUpdated: string;
 }
 
+const INGREDIENT_DETECTION_RULES = [
+  {
+    keywords: ['tomato', 'red', 'round'],
+    ingredients: ['tomato', 'onion', 'garlic', 'cheese', 'olive oil']
+  },
+  {
+    keywords: ['green', 'leafy'],
+    ingredients: ['lettuce', 'spinach', 'cucumber', 'eggs', 'olive oil']
+  },
+  {
+    keywords: ['yellow', 'round'],
+    ingredients: ['potato', 'onion', 'cheese', 'eggs', 'butter']
+  }
+];
+
 const DietScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dietPlan, setDietPlan] = useState<DietPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+  const [availableIngredients, setAvailableIngredients] = useState<string[]>([
+    'tomato', 'onion', 'garlic', 'potato', 'carrot', 
+    'chicken', 'beef', 'fish', 'eggs', 'milk', 
+    'cheese', 'bread', 'rice', 'pasta', 'flour', 
+    'sugar', 'salt', 'pepper', 'olive oil', 'butter'
+  ]);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null);
+  const [showRecipesModal, setShowRecipesModal] = useState(false);
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false);
+  const [showRecipeDetailsModal, setShowRecipeDetailsModal] = useState(false);
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -148,9 +198,98 @@ const DietScreen: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadDietPlan();
-  }, []);
+  const takeFridgePicture = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Camera
+      });
+
+      const base64Image = `data:image/jpeg;base64,${image.base64String}`;
+      setCapturedImage(base64Image);
+      
+      // Simulate ingredient detection
+      detectIngredientsFromImage(base64Image);
+    } catch (error) {
+      console.error('Error taking picture', error);
+      setError('Failed to capture image. Please try again.');
+    }
+  };
+
+  const detectIngredientsFromImage = (base64Image: string) => {
+    // Simulate image detection based on predefined rules
+    // In a real app, this would use a computer vision API
+    const detectionResult = INGREDIENT_DETECTION_RULES.find(rule => 
+      rule.keywords.some(keyword => base64Image.toLowerCase().includes(keyword))
+    );
+
+    if (detectionResult) {
+      setDetectedIngredients(detectionResult.ingredients);
+      setShowIngredientsModal(true);
+    } else {
+      setError('Could not detect ingredients. Please select manually.');
+      setShowIngredientsModal(true);
+    }
+  };
+
+  const addIngredient = (ingredient: string) => {
+    if (!selectedIngredients.includes(ingredient)) {
+      setSelectedIngredients([...selectedIngredients, ingredient]);
+      setAvailableIngredients(availableIngredients.filter(ing => ing !== ingredient));
+    }
+  };
+
+  const removeIngredient = (ingredient: string) => {
+    setSelectedIngredients(selectedIngredients.filter(ing => ing !== ingredient));
+    setAvailableIngredients([...availableIngredients, ingredient]);
+  };
+
+  const findRecipesWithIngredients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setShowIngredientsModal(false);
+
+      const response = await axios.get(`${SPOONACULAR_BASE_URL}/findByIngredients`, {
+        params: {
+          apiKey: SPOONACULAR_API_KEY,
+          ingredients: selectedIngredients.join(',+'),
+          number: 5,
+          ranking: 1
+        }
+      });
+
+      setRecipes(response.data);
+      setShowRecipesModal(true);
+    } catch (error) {
+      console.error('Error finding recipes', error);
+      setError('Failed to find recipes. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRecipeDetails = async (recipeId: number) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${SPOONACULAR_BASE_URL}/${recipeId}/information`, {
+        params: {
+          apiKey: SPOONACULAR_API_KEY,
+          includeNutrition: true
+        }
+      });
+
+      setSelectedRecipe(response.data);
+      setShowRecipeDetailsModal(true);
+    } catch (error) {
+      console.error('Error getting recipe details', error);
+      setError('Failed to load recipe details.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
     await loadDietPlan();
@@ -186,6 +325,10 @@ const DietScreen: React.FC = () => {
       </IonCardContent>
     </IonCard>
   );
+
+  useEffect(() => {
+    loadDietPlan();
+  }, []);
 
   return (
     <IonPage>
@@ -270,9 +413,250 @@ const DietScreen: React.FC = () => {
                 </IonList>
               </IonCardContent>
             </IonCard>
+
+            <IonCard>
+              <IonCardHeader>
+                <IonCardTitle>
+                  <IonIcon icon={cameraOutline} /> Fridge Recipe Generator
+                </IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <p>Take a picture of the ingredients in your fridge, and we'll suggest recipes!</p>
+                
+                <IonButton 
+                  expand="block" 
+                  onClick={takeFridgePicture}
+                >
+                  <IonIcon icon={cameraOutline} slot="start" />
+                  Take Fridge Picture
+                </IonButton>
+
+                {capturedImage && (
+                  <div className="ion-margin-top ion-text-center">
+                    <img 
+                      src={capturedImage} 
+                      alt="Captured Fridge Contents" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '300px', 
+                        objectFit: 'contain' 
+                      }} 
+                    />
+                  </div>
+                )}
+              </IonCardContent>
+            </IonCard>
+
+            {/* Ingredients Selection Modal */}
+            <IonModal 
+              isOpen={showIngredientsModal} 
+              onDidDismiss={() => setShowIngredientsModal(false)}
+            >
+              <IonHeader>
+                <IonToolbar>
+                  <IonTitle>Select Ingredients</IonTitle>
+                  <IonButton 
+                    slot="end" 
+                    fill="clear" 
+                    onClick={findRecipesWithIngredients}
+                    disabled={selectedIngredients.length === 0}
+                  >
+                    Find Recipes
+                  </IonButton>
+                </IonToolbar>
+              </IonHeader>
+              <IonContent>
+                {/* Detected Ingredients */}
+                {detectedIngredients.length > 0 && (
+                  <IonCard>
+                    <IonCardHeader>
+                      <IonCardTitle>Detected Ingredients</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      {detectedIngredients.map((ing) => (
+                        <IonChip 
+                          key={ing} 
+                          color="primary"
+                          outline={!selectedIngredients.includes(ing)}
+                          onClick={() => {
+                            if (selectedIngredients.includes(ing)) {
+                              removeIngredient(ing);
+                            } else {
+                              addIngredient(ing);
+                            }
+                          }}
+                        >
+                          <IonLabel>{ing}</IonLabel>
+                          <IonIcon 
+                            icon={selectedIngredients.includes(ing) ? removeCircleOutline : addCircleOutline} 
+                          />
+                        </IonChip>
+                      ))}
+                    </IonCardContent>
+                  </IonCard>
+                )}
+
+                {/* Selected Ingredients */}
+                <IonCard>
+                  <IonCardHeader>
+                    <IonCardTitle>Selected Ingredients</IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    {selectedIngredients.length > 0 ? (
+                      <div>
+                        {selectedIngredients.map((ing) => (
+                          <IonChip key={ing} color="success">
+                            <IonLabel>{ing}</IonLabel>
+                            <IonIcon 
+                              icon={removeCircleOutline} 
+                              onClick={() => removeIngredient(ing)}
+                            />
+                          </IonChip>
+                        ))}
+                      </div>
+                    ) : (
+                      <p>No ingredients selected yet</p>
+                    )}
+                  </IonCardContent>
+                </IonCard>
+
+                {/* Additional Ingredients */}
+                <IonCard>
+                  <IonCardHeader>
+                    <IonCardTitle>Add More Ingredients</IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    {availableIngredients.map((ing) => (
+                      <IonChip 
+                        key={ing} 
+                        outline 
+                        color="secondary"
+                        onClick={() => addIngredient(ing)}
+                      >
+                        <IonLabel>{ing}</IonLabel>
+                        <IonIcon icon={addCircleOutline} />
+                      </IonChip>
+                    ))}
+                  </IonCardContent>
+                </IonCard>
+              </IonContent>
+            </IonModal>
+
+            {/* Recipes Modal */}
+            <IonModal 
+              isOpen={showRecipesModal} 
+              onDidDismiss={() => setShowRecipesModal(false)}
+            >
+              <IonHeader>
+                <IonToolbar>
+                  <IonTitle>Suggested Recipes</IonTitle>
+                  <IonButton 
+                    slot="end" 
+                    fill="clear" 
+                    onClick={() => setShowRecipesModal(false)}
+                  >
+                    <IonIcon icon={closeCircleOutline} />
+                  </IonButton>
+                </IonToolbar>
+              </IonHeader>
+              <IonContent>
+                <IonList>
+                  {recipes.map((recipe) => (
+                    <IonItem 
+                      key={recipe.id} 
+                      onClick={() => getRecipeDetails(recipe.id)}
+                    >
+                      <IonLabel>
+                        <h2>{recipe.title}</h2>
+                        <p>
+                          <IonBadge color="success" style={{ marginRight: '10px' }}>
+                            Used: {recipe.usedIngredientCount}
+                          </IonBadge>
+                          <IonBadge color="warning">
+                            Missing: {recipe.missedIngredientCount}
+                          </IonBadge>
+                        </p>
+                      </IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
+              </IonContent>
+            </IonModal>
+
+            {/* Recipe Details Modal */}
+            <IonModal 
+              isOpen={showRecipeDetailsModal} 
+              onDidDismiss={() => setShowRecipeDetailsModal(false)}
+            >
+              <IonHeader>
+                <IonToolbar>
+                  <IonTitle>Recipe Details</IonTitle>
+                  <IonButton 
+                    slot="end" 
+                    fill="clear" 
+                    onClick={() => setShowRecipeDetailsModal(false)}
+                  >
+                    <IonIcon icon={closeCircleOutline} />
+                  </IonButton>
+                </IonToolbar>
+              </IonHeader>
+              <IonContent>
+                {selectedRecipe && (
+                  <IonGrid>
+                    <IonRow>
+                      <IonCol>
+                        <IonCard>
+                          <img 
+                            src={selectedRecipe.image} 
+                            alt={selectedRecipe.title} 
+                            style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                          />
+                          <IonCardHeader>
+                            <IonCardTitle>{selectedRecipe.title}</IonCardTitle>
+                          </IonCardHeader>
+                          <IonCardContent>
+                            <h3>Ingredients:</h3>
+                            <IonList>
+                              {selectedRecipe.extendedIngredients.map((ing: any) => (
+                                <IonItem key={ing.id}>
+                                  <IonLabel>{ing.original}</IonLabel>
+                                </IonItem>
+                              ))}
+                            </IonList>
+
+                            <h3>Instructions:</h3>
+                            <ol>
+                              {selectedRecipe.analyzedInstructions[0]?.steps.map((step: any) => (
+                                <li key={step.number}>{step.step}</li>
+                              ))}
+                            </ol>
+                          </IonCardContent>
+                        </IonCard>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                )}
+              </IonContent>
+            </IonModal>
           </div>
         )}
       </IonContent>
+
+      {/* Loading Indicator */}
+      <IonLoading
+        isOpen={loading}
+        onDidDismiss={() => setLoading(false)}
+        message={'Generating recipe...'}
+      />
+
+      {/* Error Alert */}
+      <IonAlert
+        isOpen={!!error}
+        onDidDismiss={() => setError(null)}
+        header={'Error'}
+        message={error}
+        buttons={['OK']}
+      />
     </IonPage>
   );
 };
