@@ -1,9 +1,25 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import { Redirect, Route } from 'react-router-dom';
+import { defineCustomElements } from '@ionic/pwa-elements/loader';
+import {
+  IonApp,
+  IonIcon,
+  IonLabel,
+  IonRouterOutlet,
+  IonTabBar,
+  IonTabButton,
+  IonTabs,
+  setupIonicReact
+} from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { Route, Redirect } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { 
+  eyeOutline, 
+  statsChartOutline, 
+  heartOutline,
+  chatboxOutline,
+  restaurantOutline 
+} from 'ionicons/icons';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -23,64 +39,67 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
-import './theme/custom.css';
+import './theme/chat.css';
 
-/* Pages */
-import LoginScreen from './pages/LoginScreen';
-import SignUpScreen from './pages/SignUpScreen';
 import CameraScreen from './pages/CameraScreen';
+import HealthInsightsScreen from './pages/HealthInsightsScreen';
+import ExercisePlanScreen from './pages/ExercisePlanScreen';
+import ChatScreen from './pages/ChatScreen';
+import DietScreen from './pages/DietScreen';
 
 setupIonicReact();
-
-interface PrivateRouteProps {
-  component: React.ComponentType<any>;
-  path: string;
-  exact?: boolean;
-}
-
-const PrivateRoute: React.FC<PrivateRouteProps> = ({
-  component: Component,
-  ...rest
-}) => {
-  const { currentUser } = useAuth();
-
-  return (
-    <Route
-      {...rest}
-      render={props => {
-        return currentUser ? (
-          <Component {...props} />
-        ) : (
-          <Redirect to="/login" />
-        );
-      }}
-    />
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <IonApp>
-      <AuthProvider>
-        <IonReactRouter>
-          <IonRouterOutlet>
-            <Route exact path="/login" component={LoginScreen} />
-            <Route exact path="/signup" component={SignUpScreen} />
-            <PrivateRoute path="/camera" component={CameraScreen} />
-            <Route exact path="/">
-              <Redirect to="/login" />
-            </Route>
-          </IonRouterOutlet>
-        </IonReactRouter>
-      </AuthProvider>
-    </IonApp>
-  );
-};
-
-import { defineCustomElements } from '@ionic/pwa-elements/loader';
-
-// Call the element loader after the platform has been bootstrapped
 defineCustomElements(window);
+
+const App: React.FC = () => (
+  <IonApp>
+    <IonReactRouter>
+      <IonTabs>
+        <IonRouterOutlet>
+          <Route exact path="/camera">
+            <CameraScreen />
+          </Route>
+          <Route exact path="/insights">
+            <HealthInsightsScreen />
+          </Route>
+          <Route exact path="/exercise">
+            <ExercisePlanScreen />
+          </Route>
+          <Route exact path="/chat">
+            <ChatScreen />
+          </Route>
+          <Route exact path="/diet">
+            <DietScreen />
+          </Route>
+          <Route exact path="/">
+            <Redirect to="/camera" />
+          </Route>
+        </IonRouterOutlet>
+        <IonTabBar slot="bottom">
+          <IonTabButton tab="camera" href="/camera">
+            <IonIcon icon={eyeOutline} />
+            <IonLabel>Capture</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="insights" href="/insights">
+            <IonIcon icon={statsChartOutline} />
+            <IonLabel>Insights</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="exercise" href="/exercise">
+            <IonIcon icon={heartOutline} />
+            <IonLabel>Exercise</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="chat" href="/chat">
+            <IonIcon icon={chatboxOutline} />
+            <IonLabel>Chat</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="diet" href="/diet">
+            <IonIcon icon={restaurantOutline} />
+            <IonLabel>Diet</IonLabel>
+          </IonTabButton>
+        </IonTabBar>
+      </IonTabs>
+    </IonReactRouter>
+  </IonApp>
+);
 
 const container = document.getElementById('root');
 const root = createRoot(container!);

@@ -1,30 +1,9 @@
-import { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.glucose.monitor',
-  appName: 'Glucose Monitor',
-  webDir: 'dist',
-  server: {
-    androidScheme: 'https',
-    cleartext: true
-  },
-  android: {
-    allowMixedContent: true
-  },
-  plugins: {
-    Permissions: {
-      android: {
-        permissions: [
-          "android.permission.CAMERA"
-        ]
-      }
-    },
-    Camera: {
-      android: {
-        allowCamera: true
-      }
-    }
-  }
+  appId: 'io.ionic.starter',
+  appName: 'iubat-hackacthon-practise',
+  webDir: 'dist'
 };
 
 export default config;

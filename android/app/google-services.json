@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "152882964366",
+    "project_id": "bistro-boss-rl",
+    "storage_bucket": "bistro-boss-rl.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:152882964366:android:12c69db273984d54a966df",
+        "android_client_info": {
+          "package_name": "com.glucose.monitor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "152882964366-4aeiqqe1fif0ulbe9ohpq62idhputr55.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtzLWPfNj5OIcEbiCBb2yv0jKV_46axJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "152882964366-4aeiqqe1fif0ulbe9ohpq62idhputr55.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
